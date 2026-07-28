@@ -40,15 +40,20 @@ class Migrator:
             return []
 
         pairs: list[tuple[str, str]] = []
+        new_records: list[EntryRecord] = []
         for ds_ref, key in discover_entries(
             self.source, datastores, scope=self.scope, key_prefix=self.key_prefix
         ):
             existing = self.state.get(ds_ref.name, ds_ref.scope, key)
             if existing is None:
-                self.state.upsert(
+                new_records.append(
                     EntryRecord(datastore=ds_ref.name, scope=ds_ref.scope, key=key)
                 )
             pairs.append((ds_ref.name, key))
+
+        if new_records:
+            self.state.upsert_many(new_records)
+
         return pairs
 
     def run(self, pairs: list[tuple[str, str]] | None = None) -> MigrationSummary:
